@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>弹幕控制系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-body: #191b26;
+            --bg-block: #2c2e35;
+            --bg-block-header: #383a41;
+            --bg-input: #25272d;
+            --color-body: #e1e0e1;
+            --color-headings: #fffeff;
+            --color-primary: #256eff;
+            --color-secondary: #72a2ff;
+            --color-tertiary: #444b6d;
+            --color-green: #00e000;
+            --color-red: #e2274f;
+            --border-color: var(--color-tertiary);
+            --border-radius: .5rem;
+            --padding-block: 2rem;
+            --padding-field: 1.15rem;
+        }
+
+        html, body {
+            height: 100%;
+            font-size: 62.5%;
+            background: var(--bg-body);
+            color: var(--color-body);
+            font-family: 'Open Sans', Helvetica, Arial, sans-serif;
+        }
+
+        #app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* 顶部控制区 */
+        #header {
+            background: var(--bg-block);
+            padding: var(--padding-block);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        #header h1 {
+            color: var(--color-headings);
+            font-size: 2.4rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .connection-area {
+            display: flex;
+            gap: var(--padding-block);
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .form-wrapper {
+            flex: 1;
+            min-width: 180px;
+            margin-bottom: 0;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 1.2rem;
+            background: var(--color-tertiary);
+            padding: .3rem var(--padding-field);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: var(--padding-field);
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--color-body);
+            font-size: 1.4rem;
+            border-radius: var(--border-radius);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--color-secondary);
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: 0;
+            border-radius: var(--border-radius);
+            background: var(--color-primary);
+            color: white;
+            font-size: 1.4rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: var(--color-secondary);
+        }
+
+        .btn-danger {
+            background: var(--color-red);
+        }
+
+        .btn-danger:hover {
+            background: #bd193c;
+        }
+
+        .btn-success {
+            background: #00a800;
+        }
+
+        .btn-success:hover {
+            background: #00cc00;
+        }
+
+        /* 主内容区 */
+        #main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* 左侧弹幕管理区 */
+        #danmu-panel {
+            width: 400px;
+            background: var(--bg-block);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-section {
+            padding: var(--padding-block);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .panel-section h3 {
+            color: var(--color-headings);
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+        }
+
+        /* 弹幕输入 */
+        .color-presets {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .color-presets span {
+            font-size: 1.1rem;
+        }
+
+        .color-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .color-btn.active {
+            border-color: white;
+        }
+
+        textarea.form-control {
+            min-height: 60px;
+            resize: vertical;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        /* 弹幕列表 */
+        #danmu-list-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--padding-block);
+        }
+
+        #danmu-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .danmu-item {
+            background: var(--bg-input);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-left: 4px solid var(--color-tertiary);
+        }
+
+        .danmu-item:hover {
+            background: var(--color-tertiary);
+        }
+
+        .danmu-item.created {
+            border-left-color: var(--color-green);
+        }
+
+        .danmu-item.not-created {
+            border-left-color: var(--color-red);
+        }
+
+        .danmu-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .danmu-status {
+            font-size: 1rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.3rem;
+        }
+
+        .danmu-status.created {
+            background: rgba(0, 224, 0, 0.2);
+            color: var(--color-green);
+        }
+
+        .danmu-status.not-created {
+            background: rgba(226, 39, 79, 0.2);
+            color: var(--color-red);
+        }
+
+        .delete-btn {
+            color: var(--color-red);
+            cursor: pointer;
+            font-size: 1.4rem;
+            padding: 0.2rem 0.5rem;
+        }
+
+        .delete-btn:hover {
+            background: rgba(226, 39, 79, 0.2);
+            border-radius: 0.3rem;
+        }
+
+        .danmu-item-text {
+            margin-bottom: 0.5rem;
+            word-break: break-all;
+        }
+
+        .danmu-item-info {
+            font-size: 1rem;
+            color: #888;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .danmu-item-info span {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .color-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        /* 右侧预览区 */
+        #preview-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #000;
+            position: relative;
+        }
+
+        #scene-info-bar {
+            background: var(--bg-block);
+            padding: 0.5rem var(--padding-block);
+            font-size: 1.2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        #preview-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            overflow: auto;
+        }
+
+        /* 预览区域 */
+        #preview {
+            position: relative;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 2px solid var(--color-tertiary);
+            overflow: hidden;
+            width: 270px; /* 竖屏预览默认宽度 */
+            height: 480px;
+        }
+
+        .preview-danmu {
+            position: absolute;
+            white-space: nowrap;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        /* 状态栏 */
+        #status {
+            background: var(--color-tertiary);
+            padding: 0.8rem var(--padding-block);
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        #status .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--color-red);
+        }
+
+        #status.connected .status-dot {
+            background: var(--color-green);
+        }
+
+        /* 调试日志 */
+        #debug-log {
+            position: fixed;
+            bottom: 60px;
+            right: 10px;
+            width: 350px;
+            max-height: 300px;
+            background: rgba(0,0,0,0.9);
+            color: #0f0;
+            font-family: monospace;
+            font-size: 1.1rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+        }
+
+        #debug-log.visible {
+            display: block;
+        }
+
+        #debug-log .log-entry {
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #333;
+        }
+
+        #debug-log .log-error {
+            color: #f55;
+        }
+
+        #debug-log .log-success {
+            color: #5f5;
+        }
+
+        #toggle-debug {
+            position: fixed;
+            bottom: 50px;
+            right: 10px;
+            z-index: 1001;
+            font-size: 1rem;
+            padding: 0.5rem 1rem;
+        }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-input);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--color-tertiary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--color-secondary);
+        }
+
+        /* 位置指示器 */
+        .position-indicator {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: rgba(255,255,255,0.3);
+            pointer-events: none;
+        }
+
+        .position-indicator::after {
+            content: attr(data-value);
+            position: absolute;
+            left: 5px;
+            top: 5px;
+            font-size: 1rem;
+            color: rgba(255,255,255,0.5);
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 顶部控制区 -->
+        <div id="header">
+            <h1>弹幕控制系统</h1>
+            <div class="connection-area">
+                <div class="form-wrapper">
+                    <label class="form-label">OBS WebSocket 地址</label>
+                    <input type="text" id="address" class="form-control" placeholder="192.168.31.61:4455" value="192.168.31.61:4455">
+                </div>
+                <div class="form-wrapper">
+                    <label class="form-label">密码</label>
+                    <input type="password" id="password" class="form-control" placeholder="请输入密码" value="86816075">
+                </div>
+                <button id="btn-connect" class="btn">连接</button>
+                <button id="btn-disconnect" class="btn btn-danger" style="display:none;">断开</button>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div id="main-content">
+            <!-- 左侧弹幕管理区 -->
+            <div id="danmu-panel">
+                <div class="panel-section">
+                    <h3>添加弹幕</h3>
+                    <div class="color-presets">
+                        <span>颜色：</span>
+                        <button class="color-btn active" style="background: #ff0000;" data-color="#ff0000"></button>
+                        <button class="color-btn" style="background: #ffff00;" data-color="#ffff00"></button>
+                        <button class="color-btn" style="background: #00ff00;" data-color="#00ff00"></button>
+                        <button class="color-btn" style="background: #00ffff;" data-color="#00ffff"></button>
+                        <button class="color-btn" style="background: #ff00ff;" data-color="#ff00ff"></button>
+                        <button class="color-btn" style="background: #ffffff;" data-color="#ffffff"></button>
+                        <div style="flex: 0; margin-left: 0.5rem;">
+                            <input type="color" id="custom-color" class="form-control" value="#ff0000" style="width: 36px; height: 28px; padding: 0;">
+                        </div>
+                    </div>
+                    <div class="form-wrapper">
+                        <label class="form-label">弹幕文本</label>
+                        <textarea id="danmu-text" class="form-control" placeholder="输入弹幕内容，按 Enter 添加"></textarea>
+                    </div>
+                    <div class="input-row">
+                        <div class="form-wrapper" style="flex: 0; min-width: 80px;">
+                            <label class="form-label">字体</label>
+                            <input type="number" id="danmu-size" class="form-control" value="96" min="12" max="200">
+                        </div>
+                        <div class="form-wrapper" style="flex: 0; min-width: 80px;">
+                            <label class="form-label">速度</label>
+                            <input type="number" id="danmu-speed" class="form-control" value="10" min="1" max="100">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <button id="btn-add" class="btn btn-success">添加</button>
+                        <button id="btn-clear" class="btn btn-danger">清空</button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>选择场景</h3>
+                    <select id="scene-select" class="form-control">
+                        <option value="">-- 请先连接 --</option>
+                    </select>
+                </div>
+
+                <div id="danmu-list-container">
+                    <h3 style="color: var(--color-headings); font-size: 1.4rem; margin-bottom: 1rem;">弹幕列表</h3>
+                    <div id="danmu-list">
+                        <p style="color: #666; text-align: center; padding: 2rem;">选择场景后显示弹幕列表</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧预览区 -->
+            <div id="preview-panel">
+                <div id="scene-info-bar">
+                    <span id="scene-name">未选择场景</span>
+                    <span id="scene-size">分辨率: --</span>
+                </div>
+                <div id="preview-container">
+                    <div id="preview">
+                        <!-- 预览弹幕将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 状态栏 -->
+        <div id="status">
+            <span class="status-dot"></span>
+            <span id="status-text">未连接</span>
+        </div>
+
+        <!-- 调试按钮 -->
+        <button id="toggle-debug" class="btn">调试日志</button>
+
+        <!-- 调试日志 -->
+        <div id="debug-log"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.4/dist/obs-ws.min.js"></script>
+    <script>
+        class DanmuManager {
+            constructor() {
+                this.obs = null;
+                this.isConnected = false;
+                this.currentScene = null;
+                this.sceneSize = { width: 1080, height: 1920 }; // 默认竖屏
+                this.danmuMap = new Map(); // key: uniqueId, value: danmu object
+                this.danmuOrder = []; // 按添加顺序排列
+                this.sourceIdCounter = 0; // 源名称计数器
+                this.activeDanmu = []; // 正在显示的弹幕
+                this.isPlaying = false;
+                this.animationFrameId = null;
+                this.trackHeight = 106; // 轨道高度
+                this.trackSpacing = 42; // 轨道间距
+                this.danmuSpeed = 10; // 弹幕移动速度
+                this.wasManuallyDisconnected = false; // 标记是否主动断开
+                
+                this.init();
+            }
+
+            init() {
+                // 颜色按钮
+                document.querySelectorAll('.color-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        document.getElementById('custom-color').value = e.target.dataset.color;
+                    });
+                });
+
+                document.getElementById('custom-color').addEventListener('input', () => {
+                    document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+                });
+
+                // 按钮事件
+                document.getElementById('btn-add').addEventListener('click', () => this.addDanmu());
+                document.getElementById('btn-clear').addEventListener('click', () => this.clearAll());
+                document.getElementById('btn-connect').addEventListener('click', () => this.connectOBS());
+                document.getElementById('btn-disconnect').addEventListener('click', () => this.disconnectOBS());
+                
+                // 弹幕文本输入框 Enter 键监听
+                document.getElementById('danmu-text').addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.addDanmu();
+                    }
+                });
+
+                // 场景切换
+                document.getElementById('scene-select').addEventListener('change', (e) => {
+                    this.selectScene(e.target.value);
+                });
+
+                // 调试日志
+                document.getElementById('toggle-debug').addEventListener('click', () => {
+                    document.getElementById('debug-log').classList.toggle('visible');
+                });
+
+                // 启动预览动画
+                this.startPreviewLoop();
+                
+                // 初始化按钮禁用状态
+                this.updateUIConnected(false);
+                
+                // 监听页面可见性变化，防止失去焦点后断开连接
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible' && !this.wasManuallyDisconnected && this.obs && !this.isConnected) {
+                        this.debugLog('页面恢复，重新连接OBS...');
+                        this.connectOBS();
+                    }
+                });
+            }
+
+            debugLog(msg, isError = false, isSuccess = false) {
+                const log = document.getElementById('debug-log');
+                const entry = document.createElement('div');
+                entry.className = 'log-entry' + (isError ? ' log-error' : '') + (isSuccess ? ' log-success' : '');
+                entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+                log.appendChild(entry);
+                log.scrollTop = log.scrollHeight;
+                console.log(msg);
+            }
+
+            updateStatus(msg, type = '') {
+                const statusEl = document.getElementById('status');
+                const statusText = document.getElementById('status-text');
+                statusText.textContent = msg;
+                statusEl.classList.remove('status-error');
+                if (type === 'error') {
+                    statusEl.classList.add('status-error');
+                }
+                statusEl.classList.toggle('connected', this.isConnected && type !== 'error');
+            }
+
+            colorToOBS(hexColor) {
+                // OBS text_gdiplus_v3 使用 ABGR 格式: 0xAABBGGRR
+                const r = parseInt(hexColor.slice(1, 3), 16);
+                const g = parseInt(hexColor.slice(3, 5), 16);
+                const b = parseInt(hexColor.slice(5, 7), 16);
+                return (0xFF << 24) | (b << 16) | (g << 8) | r;
+            }
+
+            // 连接OBS
+            async connectOBS() {
+                const address = document.getElementById('address').value || 'localhost:4455';
+                const password = document.getElementById('password').value;
+
+                this.updateStatus('正在连接...');
+                this.debugLog(`连接: ws://${address}`);
+
+                this.obs = new OBSWebSocket();
+
+                this.obs.on('ConnectionClosed', () => {
+                    this.isConnected = false;
+                    this.updateUIConnected(false);
+                    this.updateStatus('已断开连接');
+                    this.debugLog('连接已断开', true);
+                });
+
+                try {
+                    await this.obs.connect(`ws://${address}`, password);
+                    this.isConnected = true;
+                    this.wasManuallyDisconnected = false; // 重置主动断开标志
+                    this.updateUIConnected(true);
+                    this.updateStatus('已连接到OBS', 'success');
+                    this.debugLog('连接成功!', false, true);
+                    
+                    await this.loadScenes();
+                } catch (err) {
+                    this.isConnected = false;
+                    this.updateUIConnected(false);
+                    this.updateStatus('连接失败: ' + (err.message || err), 'error');
+                    this.debugLog(`连接失败: ${err.message || err}`, true);
+                }
+            }
+
+            updateUIConnected(connected) {
+                document.getElementById('btn-connect').style.display = connected ? 'none' : 'inline-block';
+                document.getElementById('btn-disconnect').style.display = connected ? 'inline-block' : 'none';
+                document.getElementById('status').classList.toggle('connected', connected);
+                
+                // 禁用/启用操作按钮
+                const btns = ['btn-add', 'btn-update', 'btn-clear', 'btn-play'];
+                btns.forEach(id => {
+                    const btn = document.getElementById(id);
+                    if (btn) {
+                        btn.disabled = !connected;
+                        btn.style.opacity = connected ? '1' : '0.5';
+                        btn.style.cursor = connected ? 'pointer' : 'not-allowed';
+                    }
+                });
+                
+                // 禁用/启用输入框
+                const inputs = ['danmu-text', 'danmu-size'];
+                inputs.forEach(id => {
+                    const input = document.getElementById(id);
+                    if (input) {
+                        input.disabled = !connected;
+                    }
+                });
+                
+                // 禁用颜色按钮
+                document.querySelectorAll('.color-btn').forEach(btn => {
+                    btn.style.pointerEvents = connected ? 'auto' : 'none';
+                    btn.style.opacity = connected ? '1' : '0.5';
+                });
+                
+                // 禁用自定义颜色
+                document.getElementById('custom-color').disabled = !connected;
+            }
+
+            // 加载场景列表
+            async loadScenes() {
+                try {
+                    const result = await this.obs.call('GetSceneList');
+                    const select = document.getElementById('scene-select');
+                    select.innerHTML = '';
+
+                    for (const scene of result.scenes) {
+                        const opt = document.createElement('option');
+                        opt.value = scene.sceneName;
+                        opt.text = scene.sceneName + (scene.current ? ' ★' : '');
+                        select.appendChild(opt);
+                    }
+
+                    // 自动选择当前场景
+                    const currentProgramName = result.currentProgramSceneName;
+                    const current = result.scenes.find(s => s.sceneName === currentProgramName);
+                    if (current) {
+                        select.value = current.sceneName;
+                        await this.selectScene(current.sceneName);
+                    } else if (result.scenes.length > 0) {
+                        // 如果没找到当前场景，选择第一个
+                        select.value = result.scenes[0].sceneName;
+                        await this.selectScene(result.scenes[0].sceneName);
+                    }
+
+                    this.debugLog(`加载了${result.scenes.length}个场景`, false, true);
+                    
+                    // 获取支持的输入类型
+                    this.listSupportedInputTypes();
+                } catch (err) {
+                    this.debugLog(`加载场景失败: ${err.message || err}`, true);
+                }
+            }
+            
+            // 列出支持的输入类型
+            async listSupportedInputTypes() {
+                try {
+                    const result = await this.obs.call('GetInputKindList', { enabled: false });
+                    this.debugLog(`支持的输入类型: ${JSON.stringify(result.inputKinds)}`);
+                    // 查找与文本相关的类型
+                    const textKinds = result.inputKinds.filter(k => k.toLowerCase().includes('text'));
+                    this.debugLog(`文本相关类型: ${JSON.stringify(textKinds)}`);
+                } catch (err) {
+                    this.debugLog(`获取输入类型失败: ${err.message}`);
+                }
+            }
+
+            // 选择场景
+            async selectScene(sceneName) {
+                this.currentScene = sceneName;
+                this.danmuOrder = [];
+                this.danmuMap.clear();
+                this.sourceIdCounter = 0;
+                this.stopPlaying();
+
+                document.getElementById('scene-name').textContent = sceneName || '未选择场景';
+
+                if (!sceneName) {
+                    document.getElementById('scene-size').textContent = '分辨率: --';
+                    this.renderDanmuList();
+                    this.updatePreview();
+                    return;
+                }
+
+                try {
+                    // 获取场景分辨率
+                    try {
+                        const sceneDetails = await this.obs.call('GetSceneSceneDetails', { sceneName });
+                        if (sceneDetails) {
+                            // 尝试从 sceneDetails 获取分辨率
+                            this.sceneSize.width = sceneDetails.canvasWidth || 1080;
+                            this.sceneSize.height = sceneDetails.canvasHeight || 1920;
+                            this.debugLog(`获取场景分辨率: ${this.sceneSize.width}x${this.sceneSize.height}`);
+                        }
+                    } catch (e) {
+                        // 如果获取失败，尝试使用 GetStudioModeSettings
+                        try {
+                            const settings = await this.obs.call('GetVideoSettings');
+                            this.sceneSize.width = settings.baseWidth || 1080;
+                            this.sceneSize.height = settings.baseHeight || 1920;
+                            this.debugLog(`使用视频设置分辨率: ${this.sceneSize.width}x${this.sceneSize.height}`);
+                        } catch (e2) {
+                            this.debugLog(`获取分辨率失败，使用默认: 1080x1920`, true);
+                            this.sceneSize = { width: 1080, height: 1920 };
+                        }
+                    }
+
+                    // 更新分辨率显示
+                    document.getElementById('scene-size').textContent = `分辨率: ${this.sceneSize.width}x${this.sceneSize.height}`;
+
+                    // 获取场景中的源列表
+                    const sceneData = await this.obs.call('GetSceneItemList', { sceneName });
+                    
+                    // 查找弹幕源并加载
+                    for (const item of sceneData.sceneItems || []) {
+                        if (item.sourceName.startsWith('弹幕_')) {
+                            try {
+                                const settings = await this.obs.call('GetInputSettings', { inputName: item.sourceName });
+                                const transform = await this.obs.call('GetSceneItemTransform', {
+                                    sceneName,
+                                    sceneItemId: item.sceneItemId
+                                });
+
+                                // 提取弹幕ID
+                                const idMatch = item.sourceName.match(/弹幕_(\d+)/);
+                                const uniqueId = idMatch ? parseInt(idMatch[1]) : 0;
+                                if (uniqueId > this.sourceIdCounter) this.sourceIdCounter = uniqueId;
+
+                                this.addToList({
+                                    text: settings.inputSettings?.text || '',
+                                    color: '#' + ((settings.inputSettings?.color || 0xff0000) & 0xffffff).toString(16).padStart(6, '0'),
+                                    y: Math.round((transform.sceneItemTransform?.positionY || 0) / this.sceneSize.height * 100),
+                                    fontSize: settings.inputSettings?.font?.size || 48,
+                                    created: true,
+                                    sceneItemId: item.sceneItemId,
+                                    sourceName: item.sourceName,
+                                    uniqueId: uniqueId,
+                                    positionX: transform.sceneItemTransform?.positionX || this.sceneSize.width
+                                });
+                            } catch (e) {
+                                this.debugLog(`获取弹幕源 ${item.sourceName} 设置失败: ${e.message}`);
+                            }
+                        }
+                    }
+
+                    this.renderDanmuList();
+                    this.updatePreview();
+                    
+                    this.debugLog(`已选择场景: ${sceneName}, 加载了${this.danmuOrder.length}条弹幕`);
+                    
+                    // 连接后自动开始播放
+                    this.startPlaying();
+                } catch (err) {
+                    this.debugLog(`选择场景失败: ${err.message || err}`, true);
+                }
+            }
+
+            addToList(danmu) {
+                // 使用 uniqueId 作为 key，确保每个弹幕唯一
+                if (!this.danmuMap.has(danmu.uniqueId)) {
+                    this.danmuMap.set(danmu.uniqueId, danmu);
+                    this.danmuOrder.push(danmu.uniqueId);
+                }
+            }
+
+            // 添加弹幕
+            async addDanmu() {
+                this.debugLog(`addDanmu 调用: isConnected=${this.isConnected}, currentScene=${this.currentScene}`);
+                
+                if (!this.isConnected) {
+                    this.debugLog('addDanmu: 未连接，退出', true);
+                    return;
+                }
+                
+                const text = document.getElementById('danmu-text').value.trim();
+                if (!text) {
+                    this.updateStatus('请输入弹幕内容', 'error');
+                    return;
+                }
+
+                if (!this.currentScene) {
+                    this.updateStatus('请先选择场景', 'error');
+                    return;
+                }
+
+                const color = document.getElementById('custom-color').value;
+                const fontSize = parseInt(document.getElementById('danmu-size').value) || 96;
+
+                // 一次只添加一条弹幕
+                const danmuText = text.trim();
+                this.sourceIdCounter++;
+                const sourceName = `弹幕_${this.sourceIdCounter}`;
+                this.debugLog(`创建弹幕对象: ${sourceName}`);
+                const danmu = {
+                    text: danmuText,
+                    color: color,
+                    fontSize: fontSize,
+                    created: false,
+                    sceneItemId: null,
+                    sourceName: sourceName,
+                    uniqueId: this.sourceIdCounter,
+                    positionX: this.sceneSize.width // 初始位置在屏幕右侧
+                };
+
+                // 添加到本地列表并创建到OBS
+                this.addToList(danmu);
+                await this.createDanmuSource(danmu);
+                
+                // 如果正在播放，加入轨道显示
+                if (this.isPlaying && danmu.created) {
+                    const trackIndex = this.assignTrack();
+                    danmu.trackIndex = trackIndex;
+                    danmu.positionX = this.sceneSize.width;
+                    this.tracks[trackIndex].push(danmu);
+                    this.activeDanmu.push(danmu);
+                    this.debugLog(`新弹幕加入轨道${trackIndex}: ${danmuText}`);
+                }
+
+                document.getElementById('danmu-text').value = '';
+                this.renderDanmuList();
+                this.updateStatus(`已添加弹幕: ${danmuText}`);
+            }
+
+            // 创建弹幕源
+            async createDanmuSource(danmu) {
+                this.debugLog(`开始创建弹幕: ${danmu.sourceName}, 文本: ${danmu.text}`);
+                
+                // OBS支持的文本类型
+                const textKinds = ['text_gdiplus_v3', 'text_ft2_source_v2'];
+                
+                for (const kind of textKinds) {
+                    try {
+                        this.debugLog(`尝试使用 inputKind: ${kind}`);
+                        
+                        const result = await this.obs.call('CreateInput', {
+                            sceneName: this.currentScene,
+                            inputName: danmu.sourceName,
+                            inputKind: kind,
+                            inputSettings: {
+                                text: danmu.text,
+                                color: this.colorToOBS(danmu.color),
+                                font: { face: 'Microsoft YaHei', size: danmu.fontSize },
+                                outline: true,
+                                outline_color: 0x000000
+                            }
+                        });
+                        
+                        this.debugLog(`CreateInput 返回结果: ${JSON.stringify(result)}`);
+                        danmu.sceneItemId = result.sceneItemId;
+                        this.debugLog(`获取 sceneItemId: ${danmu.sceneItemId}`);
+
+                        if (danmu.sceneItemId !== undefined && danmu.sceneItemId !== null) {
+                            await this.setSourcePosition(danmu.sceneItemId, danmu.y, this.sceneSize.width);
+                        }
+
+                        danmu.created = true;
+                        danmu.inputKind = kind;
+                        this.danmuMap.set(danmu.uniqueId, danmu);
+                        this.debugLog(`创建弹幕源成功 (${kind}): ${danmu.sourceName}`, false, true);
+                        return;
+
+                    } catch (err) {
+                        this.debugLog(`${kind} 失败: ${err.message}`);
+                    }
+                }
+                
+                // 所有类型都失败
+                this.debugLog(`创建弹幕源失败: 所有文本类型都不支持`, true);
+                danmu.created = false;
+            }
+
+            // 设置源位置（y已经是像素值）
+            async setSourcePosition(sceneItemId, yPixel, xPos = null) {
+                try {
+                    this.debugLog(`设置位置: sceneItemId=${sceneItemId}, xPos=${xPos}, yPixel=${yPixel}`);
+                    
+                    const transform = await this.obs.call('GetSceneItemTransform', {
+                        sceneName: this.currentScene,
+                        sceneItemId: sceneItemId
+                    });
+
+                    const currentTransform = transform.sceneItemTransform || {};
+                    const newY = yPixel; // 直接使用像素值
+                    const newX = xPos !== null ? xPos : (this.sceneSize.width - 200);
+
+                    await this.obs.call('SetSceneItemTransform', {
+                        sceneName: this.currentScene,
+                        sceneItemId: sceneItemId,
+                        sceneItemTransform: {
+                            ...currentTransform,
+                            positionX: newX,
+                            positionY: newY,
+                            scaleX: 1,
+                            scaleY: 1,
+                            boundsType: 'OBS_BOUNDS_NONE',
+                            boundsWidth: 1,
+                            boundsHeight: 1
+                        }
+                    });
+                    
+                    this.debugLog(`位置设置成功: X=${newX}, Y=${newY}`);
+                } catch (err) {
+                    this.debugLog(`设置位置失败: ${err.message || err}`, true);
+                }
+            }
+
+            // 删除弹幕
+            async deleteDanmu(uniqueId) {
+                if (!this.isConnected) return;
+                
+                const danmu = this.danmuMap.get(uniqueId);
+                if (!danmu) return;
+
+                if (danmu.created) {
+                    try {
+                        // 从场景中删除源
+                        await this.obs.call('RemoveInput', { inputName: danmu.sourceName });
+                        this.debugLog(`已删除弹幕源: ${danmu.sourceName}`, false, true);
+                    } catch (err) {
+                        this.debugLog(`删除弹幕源失败: ${err.message || err}`, true);
+                    }
+                }
+
+                // 从本地列表移除
+                this.danmuMap.delete(uniqueId);
+                this.danmuOrder = this.danmuOrder.filter(id => id !== uniqueId);
+                this.renderDanmuList();
+                this.updatePreview();
+                this.updateStatus(`已删除: ${danmu.text}`);
+            }
+
+            // 更新全部
+            async updateAll() {
+                if (!this.isConnected) return;
+                
+                if (!this.currentScene) {
+                    this.updateStatus('请先选择场景', 'error');
+                    return;
+                }
+
+                if (this.danmuOrder.length === 0) {
+                    this.updateStatus('弹幕列表为空', 'error');
+                    return;
+                }
+
+                this.debugLog(`更新全部 ${this.danmuOrder.length} 条弹幕`);
+
+                for (const uniqueId of this.danmuOrder) {
+                    const danmu = this.danmuMap.get(uniqueId);
+                    if (danmu && danmu.created) {
+                        // 更新每个弹幕源
+                        try {
+                            await this.obs.call('SetInputSettings', {
+                                inputName: danmu.sourceName,
+                                inputSettings: {
+                                    text: danmu.text,
+                                    color: this.colorToOBS(danmu.color),
+                                    font: { size: danmu.fontSize, face: 'Microsoft YaHei' }
+                                }
+                            });
+                            await this.setSourcePosition(danmu.sceneItemId, danmu.y, danmu.positionX);
+                        } catch (err) {
+                            this.debugLog(`更新失败: ${danmu.text}`, true);
+                        }
+                    }
+                }
+
+                this.renderDanmuList();
+                this.updatePreview();
+                this.updateStatus('已更新全部弹幕');
+            }
+
+            // 清空全部
+            async clearAll() {
+                if (!this.isConnected) return;
+                
+                this.stopPlaying();
+
+                if (!this.currentScene) {
+                    this.danmuMap.clear();
+                    this.danmuOrder = [];
+                    this.sourceIdCounter = 0;
+                    this.renderDanmuList();
+                    this.updatePreview();
+                    this.updateStatus('已清空本地列表');
+                    return;
+                }
+
+                // 删除所有弹幕源
+                const sceneData = await this.obs.call('GetSceneItemList', { sceneName: this.currentScene });
+                for (const item of sceneData.sceneItems || []) {
+                    if (item.sourceName.startsWith('弹幕_')) {
+                        try {
+                            await this.obs.call('RemoveInput', { inputName: item.sourceName });
+                        } catch (e) {
+                            // 忽略已删除错误
+                        }
+                    }
+                }
+                this.debugLog(`已清空所有弹幕源`, false, true);
+
+                this.danmuMap.clear();
+                this.danmuOrder = [];
+                this.sourceIdCounter = 0;
+                this.activeDanmu = [];
+                this.tracks = [[], []];
+                this.renderDanmuList();
+                this.updatePreview();
+                this.updateStatus('已清空全部');
+            }
+
+            // 渲染弹幕列表
+            renderDanmuList() {
+                const listEl = document.getElementById('danmu-list');
+
+                if (!this.currentScene) {
+                    listEl.innerHTML = '<p style="color: #666; text-align: center; padding: 2rem;">请先选择场景</p>';
+                    return;
+                }
+
+                if (this.danmuOrder.length === 0) {
+                    listEl.innerHTML = '<p style="color: #666; text-align: center; padding: 2rem;">暂无弹幕，点击添加</p>';
+                    return;
+                }
+
+                listEl.innerHTML = this.danmuOrder.map(uniqueId => {
+                    const d = this.danmuMap.get(uniqueId);
+                    if (!d) return '';
+
+                    return `
+                        <div class="danmu-item ${d.created ? 'created' : 'not-created'}">
+                            <div class="danmu-item-header">
+                                <span class="danmu-status ${d.created ? 'created' : 'not-created'}">
+                                    ${d.created ? '✓ 已创建' : '✗ 未创建'}
+                                </span>
+                                <span class="delete-btn" onclick="danmuManager.deleteDanmu(${d.uniqueId})">×</span>
+                            </div>
+                            <div class="danmu-item-text" style="color: ${d.color};">${this.escapeHtml(d.text)}</div>
+                            <div class="danmu-item-info">
+                                <span><span class="color-dot" style="background: ${d.color};"></span></span>
+                                <span>字体: ${d.fontSize}px</span>
+                                ${d.sourceName ? `<span>${d.sourceName}</span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML.replace(/'/g, "\\'").replace(/"/g, '\\"');
+            }
+
+            // 预览相关
+            updatePreview() {
+                const preview = document.getElementById('preview');
+                const container = document.getElementById('preview-container');
+
+                // 根据场景比例设置预览大小（竖屏优先）
+                const containerWidth = container.clientWidth - 40;
+                const containerHeight = container.clientHeight - 40;
+                const scaleX = containerWidth / this.sceneSize.width;
+                const scaleY = containerHeight / this.sceneSize.height;
+                const scale = Math.min(scaleX, scaleY, 1);
+
+                const previewWidth = this.sceneSize.width * scale;
+                const previewHeight = this.sceneSize.height * scale;
+
+                preview.style.width = previewWidth + 'px';
+                preview.style.height = previewHeight + 'px';
+
+                // 更新场景信息
+                document.getElementById('scene-size').textContent = `分辨率: ${this.sceneSize.width}x${this.sceneSize.height}`;
+
+                // 更新弹幕元素位置（如果正在播放）
+                this.updatePreviewDanmuElements();
+            }
+
+            updatePreviewDanmuElements() {
+                const preview = document.getElementById('preview');
+                const scale = parseFloat(preview.style.width) / this.sceneSize.width;
+
+                // 清理不在播放的弹幕元素
+                preview.querySelectorAll('.preview-danmu').forEach(el => {
+                    const uniqueId = parseInt(el.dataset.uniqueId);
+                    const danmu = this.activeDanmu.find(d => d.uniqueId === uniqueId);
+                    if (!danmu) el.remove();
+                });
+
+                // 更新正在播放的弹幕位置
+                this.activeDanmu.forEach(danmu => {
+                    let el = preview.querySelector(`[data-unique-id="${danmu.uniqueId}"]`);
+                    
+                    if (!el) {
+                        el = document.createElement('div');
+                        el.className = 'preview-danmu';
+                        el.dataset.uniqueId = danmu.uniqueId;
+                        el.textContent = danmu.text;
+                        el.style.color = danmu.color;
+                        el.style.fontSize = (danmu.fontSize * scale) + 'px';
+                        el.style.fontWeight = 'bold';
+                        el.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8)';
+                        el.style.whiteSpace = 'nowrap';
+                        el.style.fontFamily = 'Microsoft YaHei, Arial, sans-serif';
+                        preview.appendChild(el);
+                    }
+
+                    // 计算位置（使用像素坐标，按预览尺寸比例缩放）
+                    const previewWidth = parseFloat(preview.style.width) || 270;
+                    const previewHeight = parseFloat(preview.style.height) || 480;
+                    const scaleX = previewWidth / this.sceneSize.width;
+                    const scaleY = previewHeight / this.sceneSize.height;
+                    
+                    const xPx = danmu.positionX * scaleX;
+                    const danmuY = danmu.trackIndex !== undefined ? this.getTrackY(danmu.trackIndex) : 100;
+                    const yPx = danmuY * scaleY;
+                    
+                    el.style.left = xPx + 'px';
+                    el.style.top = yPx + 'px';
+                    el.style.transform = 'translateY(-50%)';
+                });
+            }
+
+            // 播放控制
+            startPlaying() {
+                if (!this.isConnected) return;
+                
+                if (this.danmuOrder.length === 0) {
+                    // 没有弹幕也继续运行，等待添加
+                }
+
+                this.isPlaying = true;
+
+                // 获取速度参数
+                this.danmuSpeed = parseInt(document.getElementById('danmu-speed').value) || 10;
+
+                // 固定2条轨道
+                this.trackCount = 2;
+                this.tracks = [[], []]; // 每条轨道的显示弹幕列表
+                this.trackAssignIndex = 0; // 轮询分配轨道
+                this.activeDanmu = []; // 正在显示的弹幕
+                
+                // 获取最大字体大小用于轨道高度计算
+                let maxFontSize = 96;
+                for (const uniqueId of this.danmuOrder) {
+                    const danmu = this.danmuMap.get(uniqueId);
+                    if (danmu) {
+                        maxFontSize = Math.max(maxFontSize, danmu.fontSize || 96);
+                    }
+                }
+                this.trackHeight = maxFontSize + 10;
+                this.trackSpacing = Math.ceil(this.trackHeight * 0.4);
+                
+                // 所有弹幕加入轨道
+                for (const uniqueId of this.danmuOrder) {
+                    const danmu = this.danmuMap.get(uniqueId);
+                    if (danmu && danmu.created) {
+                        const trackIndex = this.assignTrack();
+                        danmu.trackIndex = trackIndex;
+                        danmu.positionX = this.sceneSize.width;
+                        this.tracks[trackIndex].push(danmu);
+                        this.activeDanmu.push(danmu);
+                    }
+                }
+
+                this.debugLog(`开始播放，共 ${this.activeDanmu.length} 条弹幕`);
+                this.updateStatus(`播放中`);
+
+                // 开始动画循环
+                this.runAnimationLoop();
+            }
+            
+            // 分配轨道（轮询方式）
+            assignTrack() {
+                const track = this.trackAssignIndex;
+                this.trackAssignIndex = (this.trackAssignIndex + 1) % this.trackCount;
+                return track;
+            }
+            
+            // 根据轨道获取Y像素位置
+            getTrackY(trackIndex) {
+                // 轨道间距为高度的0.4倍，起始位置60确保弹幕不会超出预览顶部
+                return trackIndex * (this.trackHeight + this.trackSpacing) + 60;
+            }
+
+            stopPlaying() {
+                this.isPlaying = false;
+                this.activeDanmu = [];
+                this.tracks = [[], []];
+                
+                // 清理预览中的弹幕元素
+                const preview = document.getElementById('preview');
+                preview.querySelectorAll('.preview-danmu').forEach(el => el.remove());
+            }
+
+            async runAnimationLoop() {
+                if (!this.isPlaying) return;
+
+                // 实时获取速度参数
+                const currentSpeed = parseInt(document.getElementById('danmu-speed').value) || 10;
+
+                // 处理每条轨道
+                for (let trackIndex = 0; trackIndex < this.trackCount; trackIndex++) {
+                    const track = this.tracks[trackIndex];
+                    const trackY = this.getTrackY(trackIndex);
+                    
+                    // 移动当前轨道的所有弹幕
+                    for (let i = track.length - 1; i >= 0; i--) {
+                        const danmu = track[i];
+                        
+                        // 移动弹幕
+                        danmu.positionX -= currentSpeed;
+                        
+                        // 移出屏幕后直接删除弹幕
+                        if (danmu.positionX < -200) {
+                            // 从显示列表移除
+                            track.splice(i, 1);
+                            const idx = this.activeDanmu.indexOf(danmu);
+                            if (idx > -1) this.activeDanmu.splice(idx, 1);
+                            
+                            // 删除弹幕源
+                            if (danmu.sceneItemId && this.isConnected) {
+                                try {
+                                    this.obs.call('RemoveInput', { inputName: danmu.sourceName });
+                                } catch (e) {
+                                    // 忽略错误
+                                }
+                            }
+                            
+                            // 从本地列表移除
+                            this.danmuMap.delete(danmu.uniqueId);
+                            this.danmuOrder = this.danmuOrder.filter(id => id !== danmu.uniqueId);
+                            
+                            // 移除预览元素
+                            const previewEl = document.querySelector(`[data-unique-id="${danmu.uniqueId}"]`);
+                            if (previewEl) previewEl.remove();
+                            
+                            // 更新弹幕列表显示
+                            this.renderDanmuList();
+                            
+                            this.debugLog(`弹幕移出屏幕，已删除: ${danmu.sourceName}`);
+                        } else {
+                            // 同步更新OBS中的位置
+                            if (danmu.sceneItemId && this.isConnected) {
+                                try {
+                                    await this.setSourcePosition(danmu.sceneItemId, trackY, danmu.positionX);
+                                } catch (e) {
+                                    // 忽略同步错误
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 更新预览
+                this.updatePreviewDanmuElements();
+
+                requestAnimationFrame(() => this.runAnimationLoop());
+            }
+
+            startPreviewLoop() {
+                // 初始设置
+                this.sceneSize = { width: 1080, height: 1920 };
+                this.updatePreview();
+
+                // 监听窗口大小变化
+                window.addEventListener('resize', () => {
+                    this.updatePreview();
+                });
+            }
+
+            // 断开连接
+            disconnectOBS() {
+                this.wasManuallyDisconnected = true; // 标记为主动断开
+                this.stopPlaying();
+                
+                if (this.obs) {
+                    this.obs.disconnect();
+                    this.obs = null;
+                }
+                this.isConnected = false;
+                this.currentScene = null;
+                this.danmuMap.clear();
+                this.danmuOrder = [];
+                this.sourceIdCounter = 0;
+                this.activeDanmu = [];
+                this.tracks = [[], []];
+                this.updateUIConnected(false);
+                document.getElementById('scene-select').innerHTML = '<option value="">-- 请先连接 --</option>';
+                document.getElementById('scene-name').textContent = '未选择场景';
+                this.renderDanmuList();
+                this.updateStatus('已断开连接');
+            }
+        }
+
+        const danmuManager = new DanmuManager();
+    </script>
+</body>
+</html>
