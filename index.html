@@ -633,12 +633,20 @@
                 statusEl.classList.toggle('connected', this.isConnected && type !== 'error');
             }
 
-            colorToOBS(hexColor) {
-                // OBS text_gdiplus_v3 使用 ABGR 格式: 0xAABBGGRR
+            colorToABGR(hexColor) {
+                // text_gdiplus_v3 使用 ABGR 格式: 0xAABBGGRR
                 const r = parseInt(hexColor.slice(1, 3), 16);
                 const g = parseInt(hexColor.slice(3, 5), 16);
                 const b = parseInt(hexColor.slice(5, 7), 16);
                 return (0xFF << 24) | (b << 16) | (g << 8) | r;
+            }
+
+            colorToARGB(hexColor) {
+                // text_ft2_source_v2 使用 ARGB 格式: 0xAARRGGBB
+                const r = parseInt(hexColor.slice(1, 3), 16);
+                const g = parseInt(hexColor.slice(3, 5), 16);
+                const b = parseInt(hexColor.slice(5, 7), 16);
+                return (0xFF << 24) | (r << 16) | (g << 8) | b;
             }
 
             // 连接OBS
@@ -931,8 +939,8 @@
                             inputKind: kind,
                             inputSettings: {
                                 text: danmu.text,
-                                color: this.colorToOBS(danmu.color),
-                                font: { face: 'Microsoft YaHei', size: danmu.fontSize },
+                                color: kind === 'text_ft2_source_v2' ? this.colorToARGB(danmu.color) : this.colorToABGR(danmu.color),
+                                font: { face: 'Arial', size: danmu.fontSize },
                                 outline: true,
                                 outline_color: 0x000000
                             }
@@ -1047,8 +1055,8 @@
                                 inputName: danmu.sourceName,
                                 inputSettings: {
                                     text: danmu.text,
-                                    color: this.colorToOBS(danmu.color),
-                                    font: { size: danmu.fontSize, face: 'Microsoft YaHei' }
+                                    color: danmu.inputKind === 'text_ft2_source_v2' ? this.colorToARGB(danmu.color) : this.colorToABGR(danmu.color),
+                                    font: { size: danmu.fontSize }
                                 }
                             });
                             await this.setSourcePosition(danmu.sceneItemId, danmu.y, danmu.positionX);
@@ -1195,7 +1203,7 @@
                         el.style.fontWeight = 'bold';
                         el.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8)';
                         el.style.whiteSpace = 'nowrap';
-                        el.style.fontFamily = 'Microsoft YaHei, Arial, sans-serif';
+                        el.style.fontFamily = 'sans-serif';
                         preview.appendChild(el);
                     }
 
